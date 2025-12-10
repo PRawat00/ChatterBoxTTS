@@ -68,43 +68,8 @@ echo.
 REM Check if virtual environment exists and verify it uses compatible Python
 if exist "venv\" (
     echo Checking existing virtual environment...
-
-    REM Check the Python version in the existing venv
-    call venv\Scripts\activate.bat >nul 2>&1
-    for /f "tokens=2" %%v in ('python --version 2^>^&1') do set VENV_VERSION=%%v
-    call venv\Scripts\deactivate.bat >nul 2>&1
-
-    REM Extract major and minor version from venv
-    for /f "tokens=1,2 delims=." %%a in ("%VENV_VERSION%") do (
-        set VENV_MAJOR=%%a
-        set VENV_MINOR=%%b
-    )
-
-    REM Check if venv Python is incompatible (not 3.9-3.12)
-    set VENV_INCOMPATIBLE=0
-    if !VENV_MAJOR! NEQ 3 set VENV_INCOMPATIBLE=1
-    if !VENV_MAJOR! EQU 3 (
-        if !VENV_MINOR! LSS 9 set VENV_INCOMPATIBLE=1
-        if !VENV_MINOR! GTR 12 set VENV_INCOMPATIBLE=1
-    )
-
-    if !VENV_INCOMPATIBLE! EQU 1 (
-        echo Found incompatible virtual environment with Python !VENV_VERSION!
-        echo Removing old virtual environment...
-        rmdir /s /q venv
-        echo Old virtual environment removed.
-        echo.
-        echo Creating new virtual environment with Python %PYTHON_VERSION%...
-        %PYTHON_CMD% -m venv venv
-        if errorlevel 1 (
-            echo Error: Failed to create virtual environment.
-            pause
-            exit /b 1
-        )
-        echo Virtual environment created.
-    ) else (
-        echo Virtual environment already exists with Python !VENV_VERSION! (compatible).
-    )
+    call :check_venv
+    goto :continue_setup
 ) else (
     echo Creating virtual environment with Python %PYTHON_VERSION%...
     %PYTHON_CMD% -m venv venv
@@ -115,6 +80,8 @@ if exist "venv\" (
     )
     echo Virtual environment created.
 )
+
+:continue_setup
 echo.
 
 REM Activate virtual environment
@@ -177,3 +144,45 @@ if "%choice%"=="1" (
     pause
     exit /b 1
 )
+
+goto :eof
+
+REM Subroutine to check and fix venv compatibility
+:check_venv
+    REM Check the Python version in the existing venv
+    call venv\Scripts\activate.bat >nul 2>&1
+    for /f "tokens=2" %%v in ('python --version 2^>^&1') do set VENV_VERSION=%%v
+    call venv\Scripts\deactivate.bat >nul 2>&1
+
+    REM Extract major and minor version from venv
+    for /f "tokens=1,2 delims=." %%a in ("%VENV_VERSION%") do (
+        set VENV_MAJOR=%%a
+        set VENV_MINOR=%%b
+    )
+
+    REM Check if venv Python is incompatible (not 3.9-3.12)
+    set VENV_INCOMPATIBLE=0
+    if !VENV_MAJOR! NEQ 3 set VENV_INCOMPATIBLE=1
+    if !VENV_MAJOR! EQU 3 (
+        if !VENV_MINOR! LSS 9 set VENV_INCOMPATIBLE=1
+        if !VENV_MINOR! GTR 12 set VENV_INCOMPATIBLE=1
+    )
+
+    if !VENV_INCOMPATIBLE! EQU 1 (
+        echo Found incompatible virtual environment with Python !VENV_VERSION!
+        echo Removing old virtual environment...
+        rmdir /s /q venv
+        echo Old virtual environment removed.
+        echo.
+        echo Creating new virtual environment with Python %PYTHON_VERSION%...
+        %PYTHON_CMD% -m venv venv
+        if errorlevel 1 (
+            echo Error: Failed to create virtual environment.
+            pause
+            exit /b 1
+        )
+        echo Virtual environment created.
+    ) else (
+        echo Virtual environment already exists with Python !VENV_VERSION! (compatible).
+    )
+    goto :eof
